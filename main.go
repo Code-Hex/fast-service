@@ -102,7 +102,6 @@ func downloadHandler() http.HandlerFunc {
 		}
 		if _, err := io.CopyN(w, randomer.New(), int64(max)); err != nil {
 			logger.Error(ctx, "failed to write random file: %s", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
@@ -117,12 +116,7 @@ func uploadHandler() http.HandlerFunc {
 		}
 		contentType := r.Header.Get("Content-Type")
 		if contentType != "application/octet-stream" {
-			logger.Error(ctx, "invalid content type", zap.String("Content-Type", contentType))
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if r.ContentLength == 0 {
-			logger.Error(ctx, "invalid content length")
+			logger.Warn(ctx, "invalid content type", zap.String("Content-Type", contentType))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -131,8 +125,7 @@ func uploadHandler() http.HandlerFunc {
 			contentLength = maxSize
 		}
 		if _, err := io.CopyN(ioutil.Discard, r.Body, contentLength); err != nil {
-			logger.Error(ctx, "failed to write body", zap.Error(err))
-			w.WriteHeader(http.StatusInternalServerError)
+			logger.Warn(ctx, "failed to write body", zap.Error(err))
 			return
 		}
 	}
