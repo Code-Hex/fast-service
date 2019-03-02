@@ -1,2 +1,4 @@
 cmd/fast/fast
 vendor/
+bin/*
+!bin/.gitkeep
