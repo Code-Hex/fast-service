@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/blendle/zapdriver"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -54,11 +55,9 @@ func New(level string) (*zap.Logger, error) {
 		return nil, err
 	}
 
-	config := zap.NewProductionConfig()
+	config := zapdriver.NewProductionConfig()
 	config.Level = zap.NewAtomicLevelAt(l)
 	config.DisableStacktrace = true
-	config.OutputPaths = []string{"stdout"}
-	config.ErrorOutputPaths = []string{"stderr"}
 	return config.Build()
 }
 
