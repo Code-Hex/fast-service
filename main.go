@@ -15,8 +15,12 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/Code-Hex/fast-service/internal/config"
+	"github.com/Code-Hex/fast-service/internal/logger"
 	"github.com/Code-Hex/fast-service/internal/randomer"
+	"github.com/Code-Hex/fast-service/internal/server"
 )
 
 const maxSize = 26214400 // 25MB
@@ -29,23 +33,32 @@ func main() {
 	// Read configurations from environmental variables.
 	env, err := config.ReadFromEnv()
 	if err != nil {
-		log.Printf("failed to read environment variables: %s", err)
-		return
+		log.Fatalf("failed to read environment variables: %s", err)
 	}
 
-	mux := http.NewServeMux()
+	// Setup new zap logger. This logger should be used for all logging in this service.
+	// The log level can be updated via environment variables.
+	l, err := logger.New(env.LogLevel)
+	if err != nil {
+		log.Fatalf("failed to prepare logger: %s", err)
+	}
+
+	if err := _main(env, l); err != nil {
+		log.Fatalf("failed to serve: %s", err)
+	}
+}
+
+func _main(env *config.Env, l *zap.Logger) error {
+	mux := server.NewMux(l)
 	mux.Handle("/download", downloadHandler())
 	mux.Handle("/upload", uploadHandler())
 
-	srv := http.Server{
-		Handler: mux,
-	}
+	srv := server.New(mux)
 
 	addr := fmt.Sprintf(":%d", env.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Printf("failed to listen port: %s", err)
-		return
+		return fmt.Errorf("failed to listen port: %s", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -69,13 +82,14 @@ func main() {
 	log.Printf("shutdown servers")
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("failed to gracefully shutdown HTTP server: %s", err)
-		return
+		return fmt.Errorf("failed to gracefully shutdown HTTP server: %s", err)
 	}
+	return nil
 }
 
 func downloadHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -87,7 +101,7 @@ func downloadHandler() http.HandlerFunc {
 			max = maxSize
 		}
 		if _, err := io.CopyN(w, randomer.New(), int64(max)); err != nil {
-			log.Printf("failed to write random file: %s", err)
+			logger.Error(ctx, "failed to write random file: %s", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -96,18 +110,19 @@ func downloadHandler() http.HandlerFunc {
 
 func uploadHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		contentType := r.Header.Get("Content-Type")
 		if contentType != "application/octet-stream" {
-			log.Printf("invalid content type: %s", contentType)
+			logger.Error(ctx, "invalid content type", zap.String("Content-Type", contentType))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		if r.ContentLength == 0 {
-			log.Printf("invalid content length")
+			logger.Error(ctx, "invalid content length")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -116,7 +131,7 @@ func uploadHandler() http.HandlerFunc {
 			contentLength = maxSize
 		}
 		if _, err := io.CopyN(ioutil.Discard, r.Body, contentLength); err != nil {
-			log.Printf("failed to write body: %s", err)
+			logger.Error(ctx, "failed to write body", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
