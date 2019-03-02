@@ -2,32 +2,26 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/Code-Hex/fast-service/internal/config"
 	"github.com/Code-Hex/fast-service/internal/logger"
-	"github.com/Code-Hex/fast-service/internal/randomer"
 	"github.com/Code-Hex/fast-service/internal/server"
 )
 
 const maxSize = 26214400 // 25MB
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func main() {
 	// Read configurations from environmental variables.
@@ -100,7 +94,7 @@ func downloadHandler() http.HandlerFunc {
 		if err != nil {
 			max = maxSize
 		}
-		if _, err := io.CopyN(w, randomer.New(), int64(max)); err != nil {
+		if _, err := io.CopyN(w, rand.Reader, int64(max)); err != nil {
 			logger.Error(ctx, "failed to write random file: %s", zap.Error(err))
 			return
 		}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -9,8 +10,6 @@ import (
 	"net/http"
 	"sync/atomic"
 	"time"
-
-	"github.com/Code-Hex/fast-service/internal/randomer"
 )
 
 type record struct {
@@ -59,7 +58,7 @@ func (r *record) download(ctx context.Context, url string, size int) error {
 
 func (r *record) upload(ctx context.Context, url string, size int) error {
 	// start measure
-	proxy := r.newRecordProxy(ctx, randomer.New())
+	proxy := r.newRecordProxy(ctx, rand.Reader)
 	defer proxy.Done()
 	req, err := http.NewRequest("POST", url, proxy)
 	if err != nil {
