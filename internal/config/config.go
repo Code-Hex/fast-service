@@ -12,6 +12,9 @@ const (
 // Env stores configuration settings extract from enviromental variables
 // by using https://github.com/kelseyhightower/envconfig
 type Env struct {
+	// LogLevel is INFO or DEBUG. Default is "INFO".
+	LogLevel string `envconfig:"LOG_LEVEL" default:"INFO"`
+
 	// Env is environment where application is running The value must be
 	// "development" or "production".
 	Env string `envconfig:"ENV" required:"true"`
