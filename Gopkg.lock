@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:d666a7b48e2878c5c0de95b2b3027b458692dc6a242b0cc8e4ed2c802e5e7006"
+  name = "github.com/blendle/zapdriver"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "63327ce6a5a7d5cc97dbbeab5cdc771cfc62d1e2"
+  version = "v1.1.6"
+
+[[projects]]
   digest = "1:6f9339c912bbdda81302633ad7e99a28dfa5a639c864061f1929510a9a64aa74"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
@@ -68,6 +76,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/blendle/zapdriver",
     "github.com/dustin/go-humanize",
     "github.com/kelseyhightower/envconfig",
     "github.com/rs/xid",
