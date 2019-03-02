@@ -7,8 +7,17 @@ import (
 	"runtime"
 )
 
-const api = "https://kouzoh-p-codehex.appspot.com"
+const api = "https://fast.codehex.dev"
 const tryCount = 3
+
+var loading = []rune{
+	'⠏',
+	'⠛',
+	'⠹',
+	'⠼',
+	'⠶',
+	'⠧',
+}
 
 var (
 	maxConnections = runtime.NumCPU()
@@ -30,10 +39,13 @@ func main() {
 		upBytes   int64
 	)
 	fmt.Println()
+
+	var i int
 	err := DownloadTest(ctx, func(result *Lap) error {
 		lastDown = result.String()
 		downBytes = result.Bytes
-		fmt.Printf("    %s, size: %d ↓ - %s bps, size: %d ↑\r", lastDown, downBytes, "", 0)
+		fmt.Printf("%c%s, size: %d ↓ - %s bps, size: %d ↑\r", loading[i%len(loading)], lastDown, downBytes, "", 0)
+		i++
 		return nil
 	})
 	if err != nil {
@@ -42,11 +54,12 @@ func main() {
 	err = UploadTest(ctx, func(result *Lap) error {
 		lastUp = result.String()
 		upBytes = result.Bytes
-		fmt.Printf("    %s, size: %d ↓ - %s, size: %d ↑\r", lastDown, downBytes, lastUp, result.Bytes)
+		fmt.Printf("%c%s, size: %d ↓ - %s, size: %d ↑\r", loading[i%len(loading)], lastDown, downBytes, lastUp, result.Bytes)
+		i++
 		return nil
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("    %s, size: %d ↓ - %s, size: %d ↑\n", lastDown, downBytes, lastUp, upBytes)
+	fmt.Printf("%s, size: %d ↓ - %s, size: %d ↑\n", lastDown, downBytes, lastUp, upBytes)
 }
