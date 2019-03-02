@@ -88,6 +88,7 @@ func downloadHandler() http.HandlerFunc {
 		}
 		if _, err := io.CopyN(w, randomer.New(), int64(max)); err != nil {
 			log.Printf("failed to write random file: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
@@ -116,6 +117,7 @@ func uploadHandler() http.HandlerFunc {
 		}
 		if _, err := io.CopyN(ioutil.Discard, r.Body, contentLength); err != nil {
 			log.Printf("failed to write body: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
