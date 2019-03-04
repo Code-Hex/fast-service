@@ -12,11 +12,11 @@ var DownloadTimeout = 15 * time.Second
 const downloadURL = api + "/download"
 
 func DownloadTest(ctx context.Context, cb IntervalCallback) error {
-	eg, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithTimeout(ctx, DownloadTimeout)
 	defer cancel()
+	eg, ctx := errgroup.WithContext(ctx)
 
-	r := newRecord(time.Now(), maxConnections)
+	r := newRecorder(time.Now(), maxConnections)
 
 	go func() {
 		for {

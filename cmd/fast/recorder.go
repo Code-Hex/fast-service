@@ -12,25 +12,24 @@ import (
 	"time"
 )
 
-type record struct {
-	activeWorker int64
-	byteLen      int64
-	start        time.Time
-	recordch     chan Lap
+type recorder struct {
+	byteLen  int64
+	start    time.Time
+	recordch chan Lap
 }
 
-func newRecord(start time.Time, cpun int) *record {
-	return &record{
+func newRecorder(start time.Time, cpun int) *recorder {
+	return &recorder{
 		start:    start,
 		recordch: make(chan Lap, cpun),
 	}
 }
 
-func (r *record) Lap() <-chan Lap {
+func (r *recorder) Lap() <-chan Lap {
 	return r.recordch
 }
 
-func (r *record) download(ctx context.Context, url string, size int) error {
+func (r *recorder) download(ctx context.Context, url string, size int) error {
 	url = fmt.Sprintf("%s?size=%d", url, size)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -56,7 +55,7 @@ func (r *record) download(ctx context.Context, url string, size int) error {
 	return nil
 }
 
-func (r *record) upload(ctx context.Context, url string, size int) error {
+func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	// start measure
 	proxy := r.newRecordProxy(ctx, rand.Reader)
 	defer proxy.Done()
@@ -83,16 +82,16 @@ func (r *record) upload(ctx context.Context, url string, size int) error {
 type recordProxy struct {
 	context.Context
 	io.Reader
-	*record
+	*recorder
 	done chan struct{}
 }
 
-func (r *record) newRecordProxy(ctx context.Context, reader io.Reader) *recordProxy {
+func (r *recorder) newRecordProxy(ctx context.Context, reader io.Reader) *recordProxy {
 	rp := &recordProxy{
-		Context: ctx,
-		Reader:  reader,
-		record:  r,
-		done:    make(chan struct{}),
+		Context:  ctx,
+		Reader:   reader,
+		recorder: r,
+		done:     make(chan struct{}),
 	}
 	go rp.Watch(r.recordch)
 	return rp

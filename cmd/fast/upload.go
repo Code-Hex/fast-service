@@ -15,11 +15,11 @@ const uploadURL = api + "/upload"
 type IntervalCallback func(current *Lap) error
 
 func UploadTest(ctx context.Context, cb IntervalCallback) error {
-	eg, ctx := errgroup.WithContext(ctx)
 	ctx, cancel := context.WithTimeout(ctx, UploadTimeout)
 	defer cancel()
+	eg, ctx := errgroup.WithContext(ctx)
 
-	r := newRecord(time.Now(), maxConnections)
+	r := newRecorder(time.Now(), maxConnections)
 
 	go func() {
 		for {
