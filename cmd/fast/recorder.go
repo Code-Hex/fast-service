@@ -46,7 +46,7 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 	}
 
 	// start measure
-	proxy := r.newRecordProxy(ctx, resp.Body)
+	proxy := r.newRecorderProxy(ctx, resp.Body)
 	defer proxy.Close()
 
 	if _, err := io.Copy(ioutil.Discard, proxy); err != nil {
@@ -57,7 +57,7 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 
 func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	// start measure
-	proxy := r.newRecordProxy(ctx, rand.Reader)
+	proxy := r.newRecorderProxy(ctx, rand.Reader)
 	defer proxy.Done()
 	req, err := http.NewRequest("POST", url, proxy)
 	if err != nil {
@@ -79,15 +79,15 @@ func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	return nil
 }
 
-type recordProxy struct {
+type recorderProxy struct {
 	context.Context
 	io.Reader
 	*recorder
 	done chan struct{}
 }
 
-func (r *recorder) newRecordProxy(ctx context.Context, reader io.Reader) *recordProxy {
-	rp := &recordProxy{
+func (r *recorder) newRecorderProxy(ctx context.Context, reader io.Reader) *recorderProxy {
+	rp := &recorderProxy{
 		Context:  ctx,
 		Reader:   reader,
 		recorder: r,
@@ -97,16 +97,9 @@ func (r *recorder) newRecordProxy(ctx context.Context, reader io.Reader) *record
 	return rp
 }
 
-func (r *recordProxy) Done() { close(r.done) }
+func (r *recorderProxy) Done() { close(r.done) }
 
-type newrecord struct {
-	Bytes     int64
-	Bps       float64
-	PrettyBps float64
-	Units     string
-}
-
-func (r *recordProxy) Watch(send chan<- Lap) {
+func (r *recorderProxy) Watch(send chan<- Lap) {
 	t := time.NewTicker(150 * time.Millisecond)
 	for {
 		select {
@@ -120,7 +113,7 @@ func (r *recordProxy) Watch(send chan<- Lap) {
 	}
 }
 
-func (r *recordProxy) Read(p []byte) (n int, err error) {
+func (r *recorderProxy) Read(p []byte) (n int, err error) {
 	select {
 	case <-r.Context.Done():
 		return 0, nil
@@ -135,7 +128,7 @@ func (r *recordProxy) Read(p []byte) (n int, err error) {
 }
 
 // Close the reader when it implements io.Closer
-func (r *recordProxy) Close() error {
+func (r *recorderProxy) Close() error {
 	if closer, ok := r.Reader.(io.Closer); ok {
 		return closer.Close()
 	}
