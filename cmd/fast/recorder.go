@@ -40,6 +40,7 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	// status check
 	if resp.StatusCode != http.StatusOK {
@@ -47,8 +48,7 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 	}
 
 	// start measure
-	proxy := r.newRecorderProxy(ctx, resp.Body)
-	defer proxy.Close()
+	proxy := r.newMeasureProxy(ctx, resp.Body)
 
 	if _, err := io.Copy(ioutil.Discard, proxy); err != nil {
 		return err
@@ -58,7 +58,7 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 
 func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	// start measure
-	proxy := r.newRecorderProxy(ctx, rand.Reader)
+	proxy := r.newMeasureProxy(ctx, rand.Reader)
 	req, err := http.NewRequest("POST", url, proxy)
 	if err != nil {
 		return err
@@ -79,13 +79,13 @@ func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	return nil
 }
 
-type recorderProxy struct {
+type measureProxy struct {
 	io.Reader
 	*recorder
 }
 
-func (r *recorder) newRecorderProxy(ctx context.Context, reader io.Reader) *recorderProxy {
-	rp := &recorderProxy{
+func (r *recorder) newMeasureProxy(ctx context.Context, reader io.Reader) io.Reader {
+	rp := &measureProxy{
 		Reader:   reader,
 		recorder: r,
 	}
@@ -93,13 +93,13 @@ func (r *recorder) newRecorderProxy(ctx context.Context, reader io.Reader) *reco
 	return rp
 }
 
-func (r *recorderProxy) Watch(ctx context.Context, send chan<- Lap) {
+func (m *measureProxy) Watch(ctx context.Context, send chan<- Lap) {
 	t := time.NewTicker(150 * time.Millisecond)
 	for {
 		select {
 		case <-t.C:
-			byteLen := atomic.LoadInt64(&r.byteLen)
-			delta := time.Now().Sub(r.start).Seconds()
+			byteLen := atomic.LoadInt64(&m.byteLen)
+			delta := time.Now().Sub(m.start).Seconds()
 			send <- newLap(byteLen, delta)
 		case <-ctx.Done():
 			return
@@ -107,19 +107,11 @@ func (r *recorderProxy) Watch(ctx context.Context, send chan<- Lap) {
 	}
 }
 
-func (r *recorderProxy) Read(p []byte) (n int, err error) {
-	n, err = r.Reader.Read(p)
+func (m *measureProxy) Read(p []byte) (n int, err error) {
+	n, err = m.Reader.Read(p)
 	if err != nil {
 		return 0, err
 	}
-	atomic.AddInt64(&r.byteLen, int64(n))
+	atomic.AddInt64(&m.byteLen, int64(n))
 	return
-}
-
-// Close the reader when it implements io.Closer
-func (r *recorderProxy) Close() error {
-	if closer, ok := r.Reader.(io.Closer); ok {
-		return closer.Close()
-	}
-	return nil
 }
