@@ -35,7 +35,8 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 	if err != nil {
 		return err
 	}
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	req = req.WithContext(ctx)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -58,15 +59,14 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	// start measure
 	proxy := r.newRecorderProxy(ctx, rand.Reader)
-	defer proxy.Done()
 	req, err := http.NewRequest("POST", url, proxy)
 	if err != nil {
 		return err
 	}
 	req.ContentLength = int64(size)
 	req.Header.Set("Content-Type", "application/octet-stream")
-
-	resp, err := http.DefaultClient.Do(req.WithContext(ctx))
+	req = req.WithContext(ctx)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -80,26 +80,20 @@ func (r *recorder) upload(ctx context.Context, url string, size int) error {
 }
 
 type recorderProxy struct {
-	context.Context
 	io.Reader
 	*recorder
-	done chan struct{}
 }
 
 func (r *recorder) newRecorderProxy(ctx context.Context, reader io.Reader) *recorderProxy {
 	rp := &recorderProxy{
-		Context:  ctx,
 		Reader:   reader,
 		recorder: r,
-		done:     make(chan struct{}),
 	}
-	go rp.Watch(r.lapch)
+	go rp.Watch(ctx, r.lapch)
 	return rp
 }
 
-func (r *recorderProxy) Done() { close(r.done) }
-
-func (r *recorderProxy) Watch(send chan<- Lap) {
+func (r *recorderProxy) Watch(ctx context.Context, send chan<- Lap) {
 	t := time.NewTicker(150 * time.Millisecond)
 	for {
 		select {
@@ -107,18 +101,13 @@ func (r *recorderProxy) Watch(send chan<- Lap) {
 			byteLen := atomic.LoadInt64(&r.byteLen)
 			delta := time.Now().Sub(r.start).Seconds()
 			send <- newLap(byteLen, delta)
-		case <-r.done:
+		case <-ctx.Done():
 			return
 		}
 	}
 }
 
 func (r *recorderProxy) Read(p []byte) (n int, err error) {
-	select {
-	case <-r.Context.Done():
-		return 0, nil
-	default:
-	}
 	n, err = r.Reader.Read(p)
 	if err != nil {
 		return 0, err
