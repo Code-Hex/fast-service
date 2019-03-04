@@ -109,9 +109,6 @@ func (m *measureProxy) Watch(ctx context.Context, send chan<- Lap) {
 
 func (m *measureProxy) Read(p []byte) (n int, err error) {
 	n, err = m.Reader.Read(p)
-	if err != nil {
-		return 0, err
-	}
 	atomic.AddInt64(&m.byteLen, int64(n))
 	return
 }
