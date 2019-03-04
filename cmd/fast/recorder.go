@@ -13,20 +13,20 @@ import (
 )
 
 type recorder struct {
-	byteLen  int64
-	start    time.Time
-	recordch chan Lap
+	byteLen int64
+	start   time.Time
+	lapch   chan Lap
 }
 
 func newRecorder(start time.Time, cpun int) *recorder {
 	return &recorder{
-		start:    start,
-		recordch: make(chan Lap, cpun),
+		start: start,
+		lapch: make(chan Lap, cpun),
 	}
 }
 
 func (r *recorder) Lap() <-chan Lap {
-	return r.recordch
+	return r.lapch
 }
 
 func (r *recorder) download(ctx context.Context, url string, size int) error {
@@ -93,7 +93,7 @@ func (r *recorder) newRecordProxy(ctx context.Context, reader io.Reader) *record
 		recorder: r,
 		done:     make(chan struct{}),
 	}
-	go rp.Watch(r.recordch)
+	go rp.Watch(r.lapch)
 	return rp
 }
 
