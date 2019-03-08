@@ -18,5 +18,4 @@ If you want to run client on development(local), you should rewrite [`cmd/fast/m
 
 And build it like this.
 
-    make build/cli
     ./bin/speedtest-client
