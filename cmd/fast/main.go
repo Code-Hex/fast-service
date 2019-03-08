@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-const api = "https://fast.codehex.dev"
+const api = "http://localhost:8000"
 const tryCount = 3
 
 var loading = []rune{
