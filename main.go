@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -82,6 +82,7 @@ func _main(env *config.Env, l *zap.Logger) error {
 }
 
 func downloadHandler() http.HandlerFunc {
+	src := rand.NewSource(0)
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		if r.Method != http.MethodGet {
@@ -94,7 +95,7 @@ func downloadHandler() http.HandlerFunc {
 		if err != nil {
 			max = maxSize
 		}
-		if _, err := io.CopyN(w, rand.Reader, int64(max)); err != nil {
+		if _, err := io.CopyN(w, rand.New(src), int64(max)); err != nil {
 			logger.Error(ctx, "failed to write random file: %s", zap.Error(err))
 			return
 		}

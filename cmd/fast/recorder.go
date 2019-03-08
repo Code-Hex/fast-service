@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -28,6 +28,8 @@ func newRecorder(start time.Time, cpun int) *recorder {
 func (r *recorder) Lap() <-chan Lap {
 	return r.lapch
 }
+
+var src = rand.NewSource(0)
 
 func (r *recorder) download(ctx context.Context, url string, size int) error {
 	url = fmt.Sprintf("%s?size=%d", url, size)
@@ -58,7 +60,7 @@ func (r *recorder) download(ctx context.Context, url string, size int) error {
 
 func (r *recorder) upload(ctx context.Context, url string, size int) error {
 	// start measure
-	proxy := r.newMeasureProxy(ctx, rand.Reader)
+	proxy := r.newMeasureProxy(ctx, rand.New(rand.NewSource(0)))
 	req, err := http.NewRequest("POST", url, proxy)
 	if err != nil {
 		return err
