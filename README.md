@@ -14,7 +14,7 @@ Environment variables is [here](https://github.com/Code-Hex/fast-service/blob/9e
 
 ### How to run client
 
-If you want to run client on development(local), you should rewrite [`cmd/fast/main.go:10`](https://github.com/Code-Hex/fast-service/blob/9e3a385f34985237c655efd9aedddbf05ef3ae45/cmd/fast/main.go#L10) before build client code.
+If you want to run client on another port (default is 8000), you should rewrite [`cmd/fast/main.go:10`](https://github.com/Code-Hex/fast-service/blob/9e3a385f34985237c655efd9aedddbf05ef3ae45/cmd/fast/main.go#L10) before build client code.
 
 And build it like this.
 
