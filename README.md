@@ -1,11 +1,18 @@
 # fast-service is opensource speedtest service written in Go
 
+<p align="center">
+<img src="https://user-images.githubusercontent.com/6500104/54086456-fc5dd100-438c-11e9-9858-2c2e1dacd702.gif"></img>
+</p>
+
 ## Environment variables
 
 Environment variables is [here](https://github.com/Code-Hex/fast-service/blob/9e3a385f34985237c655efd9aedddbf05ef3ae45/internal/config/config.go#L12-L24)
 
 ## How to try this contents
 
+We are necessary [dep](https://github.com/golang/dep#installation) to install dependency packages.
+
+    dep ensure -vendor-only
     make build
 
 ### How to run server
